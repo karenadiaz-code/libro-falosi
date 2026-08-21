@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=yes">
 <title>Libro FALOSI</title>
 
 <style>
@@ -21,6 +21,12 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  touch-action: none;
+}
+
+/* Evita que el navegador interfiera con el gesto */
+#book canvas {
+  touch-action: none;
 }
 </style>
 </head>
@@ -121,6 +127,8 @@ const pageFlip = new St.PageFlip(book, {
   maxHeight: 1600,
 
   showCover: true,
+
+  /* Dejamos que la biblioteca controle el gesto */
   mobileScrollSupport: false,
 
   flippingTime: 850,
@@ -131,6 +139,72 @@ const pageFlip = new St.PageFlip(book, {
 });
 
 pageFlip.loadFromImages(pages);
+
+
+/* ================================
+   CONTROL TÁCTIL PERSONALIZADO
+   ================================ */
+
+let startX = 0;
+let startY = 0;
+let touching = false;
+
+book.addEventListener("touchstart", function(e) {
+
+  if (e.touches.length !== 1) return;
+
+  startX = e.touches[0].clientX;
+  startY = e.touches[0].clientY;
+
+  touching = true;
+
+}, { passive: false });
+
+
+book.addEventListener("touchend", function(e) {
+
+  if (!touching) return;
+
+  const endX = e.changedTouches[0].clientX;
+  const endY = e.changedTouches[0].clientY;
+
+  const deltaX = endX - startX;
+  const deltaY = endY - startY;
+
+  touching = false;
+
+  /* Ignoramos movimientos principalmente verticales */
+  if (Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+  /* Evitamos pequeños movimientos */
+  if (Math.abs(deltaX) < 40) return;
+
+  /*
+     Dedo hacia la izquierda = siguiente página
+     Dedo hacia la derecha = página anterior
+  */
+
+  if (deltaX < 0) {
+
+    pageFlip.flipNext("bottom");
+
+  } else {
+
+    pageFlip.flipPrev("bottom");
+
+  }
+
+}, { passive: false });
+
+
+/* Evita que el navegador haga scroll durante el gesto */
+book.addEventListener("touchmove", function(e) {
+
+  if (touching) {
+    e.preventDefault();
+  }
+
+}, { passive: false });
 
 </script>
 
