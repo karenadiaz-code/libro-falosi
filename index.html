@@ -131,6 +131,115 @@ const pageFlip = new St.PageFlip(book, {
 });
 
 pageFlip.loadFromImages(pages);
+  /* ==========================================
+   AYUDA INICIAL PARA USUARIOS DE CELULAR
+   ========================================== */
+
+if (window.matchMedia("(pointer: coarse)").matches) {
+
+  const helpOverlay = document.createElement("div");
+
+  helpOverlay.innerHTML = `
+    <div class="help-card">
+      <div class="help-icon">🔍</div>
+
+      <div class="help-title">
+        Toca la página para ampliar y leer
+      </div>
+
+      <div class="help-subtitle">
+        Desliza para pasar las páginas
+      </div>
+    </div>
+  `;
+
+  helpOverlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    background: rgba(0,0,0,0.08);
+    animation: helpFadeIn 0.4s ease;
+  `;
+
+  const style = document.createElement("style");
+
+  style.textContent = `
+    @keyframes helpFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes helpFadeOut {
+      from {
+        opacity: 1;
+      }
+
+      to {
+        opacity: 0;
+      }
+    }
+
+    .help-card {
+      background: rgba(255,255,255,0.96);
+      padding: 18px 24px;
+      border-radius: 16px;
+      text-align: center;
+      max-width: 280px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.20);
+      font-family: Arial, sans-serif;
+    }
+
+    .help-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .help-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+      line-height: 1.3;
+    }
+
+    .help-subtitle {
+      margin-top: 7px;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.3;
+    }
+  `;
+
+  document.head.appendChild(style);
+  document.body.appendChild(helpOverlay);
+
+  /*
+     La indicación desaparece automáticamente
+     después de 4 segundos.
+  */
+
+  setTimeout(() => {
+
+    helpOverlay.style.animation =
+      "helpFadeOut 0.5s ease forwards";
+
+    setTimeout(() => {
+      helpOverlay.remove();
+    }, 500);
+
+  }, 4000);
+
+}
   /* ================================
    VISTA AMPLIADA EN CELULAR
    ================================ */
