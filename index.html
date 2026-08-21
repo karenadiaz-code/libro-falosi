@@ -131,6 +131,189 @@ const pageFlip = new St.PageFlip(book, {
 });
 
 pageFlip.loadFromImages(pages);
+  /* ================================
+   VISTA AMPLIADA EN CELULAR
+   ================================ */
+
+if (window.matchMedia("(pointer: coarse)").matches) {
+
+  const zoomOverlay = document.createElement("div");
+
+  zoomOverlay.innerHTML = `
+    <div class="zoom-close">×</div>
+    <img id="zoomImage" src="" alt="Página ampliada">
+  `;
+
+  zoomOverlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    touch-action: none;
+  `;
+
+  document.body.appendChild(zoomOverlay);
+
+  const zoomImage = zoomOverlay.querySelector("#zoomImage");
+  const closeButton = zoomOverlay.querySelector(".zoom-close");
+
+  zoomImage.style.cssText = `
+    max-width: 95vw;
+    max-height: 95vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    transform-origin: center center;
+    user-select: none;
+    -webkit-user-drag: none;
+  `;
+
+  closeButton.style.cssText = `
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    z-index: 10000;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    color: #333;
+    font-size: 32px;
+    line-height: 38px;
+    text-align: center;
+    font-family: Arial, sans-serif;
+  `;
+
+  let currentScale = 1;
+  let startDistance = 0;
+
+  function openZoom(pageIndex) {
+
+    zoomImage.src = pages[pageIndex];
+
+    currentScale = 1;
+
+    zoomImage.style.transform = "scale(1)";
+
+    zoomOverlay.style.display = "flex";
+  }
+
+  function closeZoom() {
+
+    zoomOverlay.style.display = "none";
+
+    currentScale = 1;
+
+    zoomImage.style.transform = "scale(1)";
+  }
+
+  closeButton.addEventListener("click", closeZoom);
+
+  zoomOverlay.addEventListener("click", function(e) {
+
+    if (e.target === zoomOverlay) {
+      closeZoom();
+    }
+
+  });
+
+  /* Zoom con dos dedos */
+
+  zoomImage.addEventListener("touchstart", function(e) {
+
+    if (e.touches.length === 2) {
+
+      startDistance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+
+    }
+
+  }, { passive: false });
+
+  zoomImage.addEventListener("touchmove", function(e) {
+
+    if (e.touches.length === 2) {
+
+      e.preventDefault();
+
+      const distance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+
+      if (startDistance > 0) {
+
+        const change = distance / startDistance;
+
+        currentScale = Math.min(
+          Math.max(currentScale * change, 1),
+          4
+        );
+
+        zoomImage.style.transform =
+          `scale(${currentScale})`;
+
+        startDistance = distance;
+      }
+    }
+
+  }, { passive: false });
+
+  /*
+     Detectar toque sobre el libro.
+     Un toque corto abre la página actual.
+  */
+
+  let tapStartX = 0;
+  let tapStartY = 0;
+  let tapStartTime = 0;
+
+  book.addEventListener("touchstart", function(e) {
+
+    if (e.touches.length !== 1) return;
+
+    tapStartX = e.touches[0].clientX;
+    tapStartY = e.touches[0].clientY;
+    tapStartTime = Date.now();
+
+  }, { passive: true });
+
+  book.addEventListener("touchend", function(e) {
+
+    if (e.changedTouches.length !== 1) return;
+
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+
+    const movement = Math.hypot(
+      endX - tapStartX,
+      endY - tapStartY
+    );
+
+    const duration = Date.now() - tapStartTime;
+
+    /*
+       Solo consideramos toque si:
+       - se movió muy poco
+       - duró menos de 350 ms
+    */
+
+    if (movement < 15 && duration < 350) {
+
+      const currentPage = pageFlip.getCurrentPageIndex();
+
+      openZoom(currentPage);
+    }
+
+  }, { passive: true });
+
+}
 
 </script>
 
